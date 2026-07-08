@@ -1,0 +1,499 @@
+```html
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>鞋業 ERP + AI 視覺應用系統</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+        body { font-family: 'Noto Sans TC', sans-serif; }
+        .view-section { display: none; }
+        .view-section.active { display: block; }
+        .ai-scanning {
+            background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.2), transparent);
+            background-size: 200% 100%;
+            animation: scan 2s infinite linear;
+        }
+        @keyframes scan {
+            0% { background-position: 100% 0; }
+            100% { background-position: -100% 0; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 flex h-screen overflow-hidden text-gray-800">
+
+    <!-- Sidebar -->
+    <aside class="w-64 bg-slate-800 text-white flex flex-col hidden md:flex transition-all duration-300">
+        <div class="p-5 flex items-center gap-3 border-b border-slate-700">
+            <i class="fa-solid fa-shoe-prints text-blue-400 text-2xl"></i>
+            <h1 class="text-xl font-bold tracking-wider">Footwear ERP</h1>
+        </div>
+        <nav class="flex-1 p-4 space-y-2">
+            <a href="#" onclick="switchView('dashboard')" class="nav-btn block p-3 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-500 transition-colors" data-target="dashboard">
+                <i class="fa-solid fa-chart-pie w-6"></i> 儀表板首頁
+            </a>
+            <a href="#" onclick="switchView('order-form')" class="nav-btn block p-3 rounded-lg text-slate-300 font-medium hover:bg-slate-700 hover:text-white transition-colors" data-target="order-form">
+                <i class="fa-solid fa-plus-circle w-6"></i> 新增生產訂單
+            </a>
+            <a href="#" onclick="switchView('outsourcing')" class="nav-btn block p-3 rounded-lg text-slate-300 font-medium hover:bg-slate-700 hover:text-white transition-colors" data-target="outsourcing">
+                <i class="fa-solid fa-truck-fast w-6"></i> 委外加工管理
+            </a>
+        </nav>
+        <div class="p-4 border-t border-slate-700 text-sm text-slate-400">
+            <p><i class="fa-regular fa-user"></i> 系統管理員 (Seth)</p>
+            <p class="mt-1"><i class="fa-solid fa-circle text-green-400 text-xs"></i> 系統連線正常</p>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col h-screen overflow-y-auto">
+        <!-- Top Header (Mobile view focus) -->
+        <header class="bg-white shadow-sm p-4 flex justify-between items-center md:hidden">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-shoe-prints text-blue-600"></i>
+                <span class="font-bold">Footwear ERP</span>
+            </div>
+            <button class="text-gray-500 hover:text-gray-700"><i class="fa-solid fa-bars text-xl"></i></button>
+        </header>
+
+        <div class="p-6 max-w-7xl mx-auto w-full">
+            
+            <!-- ================= VIEW: Dashboard ================= -->
+            <div id="view-dashboard" class="view-section active space-y-6">
+                <div class="flex justify-between items-end">
+                    <h2 class="text-2xl font-bold text-gray-800">儀表板首頁</h2>
+                    <span class="text-sm text-gray-500">更新時間：<span id="current-time"></span></span>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
+                        <div class="bg-blue-100 text-blue-600 p-3 rounded-lg"><i class="fa-solid fa-file-invoice text-xl"></i></div>
+                        <div>
+                            <p class="text-sm text-gray-500 font-medium">新增訂單 (今日)</p>
+                            <p class="text-2xl font-bold">3</p>
+                        </div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
+                        <div class="bg-amber-100 text-amber-600 p-3 rounded-lg"><i class="fa-solid fa-industry text-xl"></i></div>
+                        <div>
+                            <p class="text-sm text-gray-500 font-medium">生產中</p>
+                            <p class="text-2xl font-bold">15</p>
+                        </div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
+                        <div class="bg-purple-100 text-purple-600 p-3 rounded-lg"><i class="fa-solid fa-boxes-packing text-xl"></i></div>
+                        <div>
+                            <p class="text-sm text-gray-500 font-medium">待出貨</p>
+                            <p class="text-2xl font-bold">8</p>
+                        </div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
+                        <div class="bg-green-100 text-green-600 p-3 rounded-lg"><i class="fa-solid fa-check-double text-xl"></i></div>
+                        <div>
+                            <p class="text-sm text-gray-500 font-medium">已出貨 (本月)</p>
+                            <p class="text-2xl font-bold">142</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Alerts -->
+                <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg shadow-sm">
+                    <div class="flex items-center gap-2 text-red-700 font-bold mb-2">
+                        <i class="fa-solid fa-bell-on"></i> 異常預警
+                    </div>
+                    <ul class="text-sm text-red-600 space-y-1 ml-6 list-disc">
+                        <li>訂單 <span class="font-bold">B39912</span>: 生產數(280) vs 計劃數(290) 偏差 -3.4% （超出±2%預警值）</li>
+                        <li>外發單 <span class="font-bold">OUT-00002</span>: 山傳廠待收回，已逾期 2 天</li>
+                    </ul>
+                </div>
+
+                <!-- Orders Table -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="p-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+                        <h3 class="font-bold text-gray-700">近期訂單列表</h3>
+                        <div class="flex gap-2">
+                            <input type="text" placeholder="搜尋指令號碼..." class="px-3 py-1 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <button class="bg-white border border-gray-300 px-3 py-1 rounded-lg text-sm hover:bg-gray-50"><i class="fa-solid fa-filter"></i> 篩選</button>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-gray-50 text-gray-500 text-sm border-b">
+                                    <th class="p-3 font-medium">指令號碼</th>
+                                    <th class="p-3 font-medium">廠型號</th>
+                                    <th class="p-3 font-medium">顏色</th>
+                                    <th class="p-3 font-medium">計劃數</th>
+                                    <th class="p-3 font-medium">完成數</th>
+                                    <th class="p-3 font-medium">狀態</th>
+                                    <th class="p-3 font-medium text-center">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-sm divide-y divide-gray-100" id="order-table-body">
+                                <!-- Data injected via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= VIEW: Order Form (with AI) ================= -->
+            <div id="view-order-form" class="view-section space-y-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-bold text-gray-800">新增生產訂單</h2>
+                    <div class="space-x-2">
+                        <button onclick="switchView('dashboard')" class="px-4 py-2 text-gray-600 bg-gray-200 rounded-lg hover:bg-gray-300">取消</button>
+                        <button onclick="saveOrder()" class="px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 font-medium"><i class="fa-solid fa-save"></i> 儲存訂單</button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Left: Form -->
+                    <div class="lg:col-span-2 space-y-6">
+                        <!-- AI Upload Section (Prototype Highlight) -->
+                        <div class="bg-blue-50 border border-blue-200 rounded-xl p-6 text-center border-dashed" id="ai-upload-zone">
+                            <i class="fa-solid fa-camera-retro text-4xl text-blue-400 mb-3"></i>
+                            <h3 class="font-bold text-blue-800 mb-1">AI 視覺自動辨識 (第3階段功能展示)</h3>
+                            <p class="text-sm text-blue-600 mb-4">上傳紙本「生產製造表」照片，系統將自動萃取文字並回填表單</p>
+                            <button onclick="simulateAIProcess()" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 shadow-sm transition-all">
+                                <i class="fa-solid fa-upload"></i> 上傳單據照片
+                            </button>
+                            
+                            <!-- Processing State -->
+                            <div id="ai-processing" class="hidden mt-4">
+                                <div class="w-full bg-blue-200 rounded-full h-2.5 mb-2 overflow-hidden">
+                                    <div class="bg-blue-600 h-2.5 rounded-full ai-scanning w-full"></div>
+                                </div>
+                                <p class="text-xs text-blue-700 font-medium" id="ai-status-text">OCR 影像預處理中...</p>
+                            </div>
+                        </div>
+
+                        <!-- Manual Form -->
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                            <h3 class="font-bold text-gray-800 mb-4 pb-2 border-b"><i class="fa-solid fa-circle-info text-gray-400"></i> 基本資訊</h3>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">指令號碼 *</label>
+                                    <input type="text" id="f-order-code" class="w-full border-gray-300 border rounded-lg px-3 py-2 bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors" value="SYS-AUTO-001" readonly>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">廠型號 *</label>
+                                    <input type="text" id="f-factory-model" class="w-full border-gray-300 border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors" placeholder="例如: SKE0b001">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">客戶型號 *</label>
+                                    <input type="text" id="f-customer-model" class="w-full border-gray-300 border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors" placeholder="例如: 16/11">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">顏色 *</label>
+                                    <select id="f-color" class="w-full border-gray-300 border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white">
+                                        <option value="">請選擇</option>
+                                        <option value="黑">黑</option>
+                                        <option value="白">白</option>
+                                        <option value="棕">棕</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">計劃數量 (雙) *</label>
+                                    <input type="number" id="f-qty" class="w-full border-gray-300 border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors" placeholder="0">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">預計生產期</label>
+                                    <input type="date" class="w-full border-gray-300 border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-600">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Materials Form -->
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                            <div class="flex justify-between items-center mb-4 pb-2 border-b">
+                                <h3 class="font-bold text-gray-800"><i class="fa-solid fa-box-open text-gray-400"></i> 使用物料 (基本盤)</h3>
+                                <button class="text-sm text-blue-600 hover:text-blue-800 font-medium"><i class="fa-solid fa-plus"></i> 手動新增物料</button>
+                            </div>
+                            
+                            <table class="w-full text-left text-sm mb-4">
+                                <thead>
+                                    <tr class="text-gray-500 border-b">
+                                        <th class="pb-2 font-medium">物料名稱</th>
+                                        <th class="pb-2 font-medium">用量</th>
+                                        <th class="pb-2 font-medium">來源</th>
+                                        <th class="pb-2 font-medium w-10 text-center">刪</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="materials-list" class="divide-y divide-gray-100">
+                                    <!-- Materials go here -->
+                                    <tr id="empty-materials-msg">
+                                        <td colspan="4" class="py-6 text-center text-gray-400">尚無物料，請手動新增或使用 AI 辨識</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Right: AI Results Panel -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 h-fit hidden" id="ai-result-panel">
+                        <div class="flex items-center gap-2 text-green-600 font-bold mb-4 pb-2 border-b border-green-100">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> AI 辨識結果
+                        </div>
+                        <div class="mb-4">
+                            <p class="text-xs text-gray-500 mb-1">整體信心度 (LLM Confidence)</p>
+                            <div class="flex items-center gap-2">
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div class="bg-green-500 h-2 rounded-full" style="width: 92%"></div>
+                                </div>
+                                <span class="text-sm font-bold text-green-600">92%</span>
+                            </div>
+                        </div>
+                        
+                        <h4 class="text-sm font-bold text-gray-700 mb-2 mt-4">已萃取欄位：</h4>
+                        <ul class="text-sm space-y-2 text-gray-600 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                            <li class="flex justify-between"><span>指令號碼:</span> <strong class="text-gray-900">B40314</strong></li>
+                            <li class="flex justify-between"><span>廠型號:</span> <strong class="text-gray-900">SKE0b001</strong></li>
+                            <li class="flex justify-between"><span>客戶型號:</span> <strong class="text-gray-900">16/11</strong></li>
+                            <li class="flex justify-between"><span>顏色:</span> <strong class="text-gray-900">黑</strong></li>
+                            <li class="flex justify-between"><span>計劃數量:</span> <strong class="text-gray-900">2840</strong></li>
+                        </ul>
+
+                        <h4 class="text-sm font-bold text-gray-700 mb-2 mt-4">語意對接物料 (Fuzzy Match)：</h4>
+                        <ul class="text-sm space-y-2">
+                            <li class="flex justify-between items-center bg-green-50 px-2 py-1 rounded">
+                                <span>PVC吹氣底台</span>
+                                <span class="text-xs bg-green-200 text-green-800 px-1 rounded">95%</span>
+                            </li>
+                            <li class="flex justify-between items-center bg-green-50 px-2 py-1 rounded">
+                                <span>網布類夾貼</span>
+                                <span class="text-xs bg-green-200 text-green-800 px-1 rounded">88%</span>
+                            </li>
+                            <li class="flex justify-between items-center bg-yellow-50 px-2 py-1 rounded">
+                                <span>內墊貼薄夾貼襯紫</span>
+                                <span class="text-xs bg-yellow-200 text-yellow-800 px-1 rounded">75% (需確認)</span>
+                            </li>
+                        </ul>
+
+                        <div class="mt-6">
+                            <button onclick="document.getElementById('ai-result-panel').classList.add('hidden')" class="w-full border border-gray-300 text-gray-600 px-4 py-2 rounded-lg text-sm hover:bg-gray-50">關閉面板</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= VIEW: Outsourcing ================= -->
+            <div id="view-outsourcing" class="view-section space-y-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-bold text-gray-800">委外加工管理</h2>
+                    <button class="px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 font-medium"><i class="fa-solid fa-plus"></i> 新增外發單</button>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 flex gap-4 items-end bg-gray-50">
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">狀態</label>
+                        <select class="border rounded px-3 py-1.5 text-sm bg-white"><option>全部</option><option>待收回</option><option>已結算</option></select>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">加工廠</label>
+                        <select class="border rounded px-3 py-1.5 text-sm bg-white"><option>全部</option><option>阿昌廠</option><option>山傳廠</option></select>
+                    </div>
+                    <button class="px-4 py-1.5 border border-gray-300 bg-white rounded text-sm hover:bg-gray-50"><i class="fa-solid fa-search"></i> 查詢</button>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead>
+                            <tr class="bg-gray-50 text-gray-500 border-b">
+                                <th class="p-3 font-medium">外發單號</th>
+                                <th class="p-3 font-medium">廠名</th>
+                                <th class="p-3 font-medium">發出數量</th>
+                                <th class="p-3 font-medium">收回數量</th>
+                                <th class="p-3 font-medium text-red-500">損耗%</th>
+                                <th class="p-3 font-medium">應付加工費</th>
+                                <th class="p-3 font-medium">狀態</th>
+                                <th class="p-3 font-medium text-center">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            <tr>
+                                <td class="p-3 font-medium">OUT-00001</td>
+                                <td class="p-3">阿昌廠</td>
+                                <td class="p-3">1000</td>
+                                <td class="p-3">950</td>
+                                <td class="p-3 text-red-500">5.0%</td>
+                                <td class="p-3">NT$ 9,500</td>
+                                <td class="p-3"><span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs">✓ 已結算</span></td>
+                                <td class="p-3 text-center"><button class="text-blue-500 hover:text-blue-700"><i class="fa-solid fa-eye"></i></button></td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 font-medium text-blue-600">OUT-00002</td>
+                                <td class="p-3">山傳廠</td>
+                                <td class="p-3">500</td>
+                                <td class="p-3 text-gray-400">-</td>
+                                <td class="p-3 text-gray-400">-</td>
+                                <td class="p-3 text-gray-400">-</td>
+                                <td class="p-3"><span class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs">📋 待收回</span></td>
+                                <td class="p-3 text-center">
+                                    <button onclick="promptReceive()" class="bg-blue-100 text-blue-600 px-2 py-1 rounded text-xs hover:bg-blue-200">掃碼收回</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 font-medium">OUT-00003</td>
+                                <td class="p-3">怡發廠</td>
+                                <td class="p-3">200</td>
+                                <td class="p-3">198</td>
+                                <td class="p-3 text-red-500">1.0%</td>
+                                <td class="p-3">NT$ 1,980</td>
+                                <td class="p-3"><span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs">✓ 已結算</span></td>
+                                <td class="p-3 text-center"><button class="text-blue-500 hover:text-blue-700"><i class="fa-solid fa-eye"></i></button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        // Set Current Time
+        document.getElementById('current-time').innerText = new Date().toLocaleString('zh-TW');
+
+        // Mock Order Data
+        const orders = [
+            { code: 'B40314', model: 'SKE0b001', color: '黑', planned: 2840, actual: 2840, status: '✓ 已出貨', statusClass: 'text-green-600 bg-green-100' },
+            { code: 'B40504', model: 'Holster', color: '棕', planned: 1000, actual: 950, status: '△ 生產中', statusClass: 'text-amber-600 bg-amber-100' },
+            { code: 'HST3916', model: 'ND-M', color: '黑', planned: 212, actual: 200, status: '△ 生產中', statusClass: 'text-amber-600 bg-amber-100' },
+            { code: 'B39912', model: 'Classic-1', color: '白', planned: 290, actual: 280, status: '❗ 異常', statusClass: 'text-red-600 bg-red-100' },
+        ];
+
+        // Populate Dashboard Table
+        const tbody = document.getElementById('order-table-body');
+        orders.forEach(o => {
+            tbody.innerHTML += `
+                <tr class="hover:bg-gray-50">
+                    <td class="p-3 font-medium text-blue-600 cursor-pointer">${o.code}</td>
+                    <td class="p-3">${o.model}</td>
+                    <td class="p-3">${o.color}</td>
+                    <td class="p-3">${o.planned}</td>
+                    <td class="p-3">${o.actual}</td>
+                    <td class="p-3"><span class="px-2 py-1 rounded-full text-xs font-medium ${o.statusClass}">${o.status}</span></td>
+                    <td class="p-3 text-center"><button class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-ellipsis-vertical"></i></button></td>
+                </tr>
+            `;
+        });
+
+        // View Navigation Logic
+        function switchView(viewId) {
+            // Hide all views
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            // Show target view
+            document.getElementById('view-' + viewId).classList.add('active');
+            
+            // Update sidebar styles
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-blue-600', 'text-white');
+                btn.classList.add('text-slate-300', 'hover:bg-slate-700');
+                if(btn.dataset.target === viewId) {
+                    btn.classList.add('bg-blue-600', 'text-white');
+                    btn.classList.remove('text-slate-300', 'hover:bg-slate-700');
+                }
+            });
+        }
+
+        // --- AI Vision Simulation Logic ---
+        function simulateAIProcess() {
+            const btn = document.querySelector('#ai-upload-zone button');
+            const processing = document.getElementById('ai-processing');
+            const statusText = document.getElementById('ai-status-text');
+            const resultPanel = document.getElementById('ai-result-panel');
+            const emptyMsg = document.getElementById('empty-materials-msg');
+            const matList = document.getElementById('materials-list');
+
+            // Reset UI
+            btn.style.display = 'none';
+            processing.classList.remove('hidden');
+            resultPanel.classList.add('hidden');
+            
+            // Step 1: Preprocessing
+            statusText.innerText = "1/3 OCR 影像預處理中...";
+            
+            // Step 2: OCR Extract
+            setTimeout(() => {
+                statusText.innerText = "2/3 Google Cloud Vision 文字萃取中...";
+            }, 1000);
+
+            // Step 3: LLM Semantic Match
+            setTimeout(() => {
+                statusText.innerText = "3/3 Gemini LLM 語意對接基本盤物料中...";
+            }, 2500);
+
+            // Complete & Fill Data
+            setTimeout(() => {
+                processing.classList.add('hidden');
+                btn.style.display = 'inline-block';
+                btn.innerHTML = '<i class="fa-solid fa-check"></i> 辨識完成，請確認';
+                btn.classList.replace('bg-blue-600', 'bg-green-600');
+                btn.classList.replace('hover:bg-blue-700', 'hover:bg-green-700');
+                
+                // Show Result Panel
+                resultPanel.classList.remove('hidden');
+                
+                // Auto-fill form fields (based on Spec B40314 example)
+                document.getElementById('f-order-code').value = 'B40314';
+                document.getElementById('f-factory-model').value = 'SKE0b001';
+                document.getElementById('f-customer-model').value = '16/11';
+                document.getElementById('f-color').value = '黑';
+                document.getElementById('f-qty').value = '2840';
+                
+                // Highlight inputs to show they were auto-filled
+                const inputs = ['f-order-code', 'f-factory-model', 'f-customer-model', 'f-color', 'f-qty'];
+                inputs.forEach(id => {
+                    document.getElementById(id).classList.add('bg-green-50', 'border-green-300');
+                    setTimeout(() => {
+                        document.getElementById(id).classList.remove('bg-green-50', 'border-green-300');
+                    }, 2000);
+                });
+
+                // Populate Materials Table
+                if(emptyMsg) emptyMsg.style.display = 'none';
+                matList.innerHTML = `
+                    <tr class="hover:bg-gray-50 border-b border-gray-50">
+                        <td class="py-2"><span class="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded mr-2">底套</span> PVC吹氣底台</td>
+                        <td class="py-2"><input type="number" value="1" class="w-16 border rounded px-1 text-sm"> 套</td>
+                        <td class="py-2 text-xs text-green-600"><i class="fa-solid fa-robot"></i> AI (95%)</td>
+                        <td class="py-2 text-center text-red-400 hover:text-red-600 cursor-pointer"><i class="fa-solid fa-xmark"></i></td>
+                    </tr>
+                    <tr class="hover:bg-gray-50 border-b border-gray-50">
+                        <td class="py-2"><span class="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded mr-2">布料</span> 網布類夾貼</td>
+                        <td class="py-2"><input type="number" value="1" class="w-16 border rounded px-1 text-sm"> 套</td>
+                        <td class="py-2 text-xs text-green-600"><i class="fa-solid fa-robot"></i> AI (88%)</td>
+                        <td class="py-2 text-center text-red-400 hover:text-red-600 cursor-pointer"><i class="fa-solid fa-xmark"></i></td>
+                    </tr>
+                    <tr class="hover:bg-gray-50 border-b border-gray-50 bg-yellow-50">
+                        <td class="py-2"><span class="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs rounded mr-2">疑慮</span> 內墊貼薄夾貼襯紫</td>
+                        <td class="py-2"><input type="number" value="1" class="w-16 border rounded px-1 text-sm bg-white"> 套</td>
+                        <td class="py-2 text-xs text-yellow-600"><i class="fa-solid fa-user-check"></i> AI (75%)需確認</td>
+                        <td class="py-2 text-center text-red-400 hover:text-red-600 cursor-pointer"><i class="fa-solid fa-xmark"></i></td>
+                    </tr>
+                `;
+
+            }, 4000);
+        }
+
+        function saveOrder() {
+            alert('系統提示：訂單已儲存成功！並已推送至財務對帳佇列。');
+            switchView('dashboard');
+        }
+
+        function promptReceive() {
+            const qty = prompt("請掃描條碼或手動輸入『收回數量』(發出數: 500):", "500");
+            if(qty) {
+                alert(`系統已確認收回 ${qty} 件。損耗率自動計算，已產生應付加工費單據！`);
+            }
+        }
+    </script>
+</body>
+</html>
+
+```
